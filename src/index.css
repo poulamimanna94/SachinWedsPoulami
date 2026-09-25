@@ -542,31 +542,190 @@ footer small { color: rgba(247,243,233,.35); font-size: 9px; }
   height: 1px !important;
   border: 0 !important;
 }
-/* Entry gate: the tap that opens the invitation also unlocks the music. */
+/* Entry gate: a gatefold card closed with a wax seal. Tapping the seal (or
+   anywhere) cracks it, the doors swing open carrying a half of the seal each,
+   and the invitation is revealed. The same tap also unlocks the music. */
 .entry-gate {
   position: fixed;
   inset: 0;
   z-index: 1000;
-  display: grid;
-  place-items: center;
-  padding: 16px;
-  background: radial-gradient(circle at center, var(--maroon) 0%, var(--deep) 75%);
+  overflow: hidden;
+  perspective: 1800px;
+  cursor: pointer;
+  color: var(--sand);
 }
-.entry-gate-card {
-  width: min(460px, 100%);
-  padding: 40px 24px;
+.entry-gate-opening { cursor: default; pointer-events: none; animation: gate-fade .5s ease 1.9s forwards; }
+/* Warm light that spills out from between the doors as they part. */
+.gate-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(243,229,171,.85) 0%, rgba(212,175,55,.35) 30%, transparent 65%);
+  opacity: 0;
+  pointer-events: none;
+}
+.entry-gate-opening .gate-glow { animation: gate-glow 1.8s ease .4s both; }
+@keyframes gate-glow { 0% { opacity: 0; transform: scaleX(.1); } 35% { opacity: 1; } 100% { opacity: 0; transform: scaleX(1.4); } }
+@keyframes gate-fade { to { opacity: 0; visibility: hidden; } }
+
+.gate-door {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 50%;
+  overflow: visible;
+  background:
+    radial-gradient(ellipse at 100% 50%, rgba(107,20,33,.95), transparent 70%),
+    repeating-radial-gradient(circle at 100% 50%, transparent 0 22px, rgba(212,175,55,.05) 22px 23px),
+    linear-gradient(180deg, #4A0E17, #2D0A0F);
+  box-shadow: inset 0 0 0 12px rgba(45,10,15,.6), inset 0 0 0 13px rgba(212,175,55,.35), inset 0 0 90px rgba(0,0,0,.55);
+  backface-visibility: hidden;
+  transition: transform 1.7s cubic-bezier(.4,.1,.25,1) .45s;
+}
+.gate-door-left { left: 0; transform-origin: left center; border-right: 1px solid rgba(212,175,55,.55); }
+.gate-door-right {
+  right: 0;
+  transform-origin: right center;
+  border-left: 1px solid rgba(212,175,55,.55);
+  background:
+    radial-gradient(ellipse at 0% 50%, rgba(107,20,33,.95), transparent 70%),
+    repeating-radial-gradient(circle at 0% 50%, transparent 0 22px, rgba(212,175,55,.05) 22px 23px),
+    linear-gradient(180deg, #4A0E17, #2D0A0F);
+}
+.entry-gate-opening .gate-door-left { transform: rotateY(-110deg); }
+.entry-gate-opening .gate-door-right { transform: rotateY(110deg); }
+
+.gate-floral {
+  position: absolute;
+  width: min(210px, 42vw);
+  height: auto;
+  filter: drop-shadow(0 3px 4px rgba(0,0,0,.45));
+  animation: floral-in 1.2s ease both;
+}
+.gate-floral-tl { top: 0; left: 0; }
+.gate-floral-bl { bottom: 0; left: 0; transform: scaleY(-1); }
+.gate-floral-tr { top: 0; right: 0; transform: scaleX(-1); }
+.gate-floral-br { bottom: 0; right: 0; transform: scale(-1, -1); }
+@keyframes floral-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* Seal halves sit on the inner edge of each door, clipped to one half each. */
+.gate-seal-half {
+  position: absolute;
+  top: 50%;
+  width: 124px; height: 124px;
+  margin-top: -62px;
+  filter: drop-shadow(0 6px 10px rgba(0,0,0,.5));
+  animation: seal-drop .9s cubic-bezier(.3,1.5,.5,1) .5s both;
+}
+.gate-seal-half-left { right: -63px; clip-path: inset(0 50% 0 0); }
+.gate-seal-half-right { left: -63px; clip-path: inset(0 0 0 50%); }
+.gate-seal-art { width: 100%; height: 100%; display: block; animation: seal-breathe 3s ease-in-out 2s infinite; }
+.gate-seal-monogram { font: 700 19px "Cinzel Decorative", serif; fill: #4A0E17; letter-spacing: -.5px; }
+@keyframes seal-drop { from { opacity: 0; transform: scale(1.8); } to { opacity: 1; transform: scale(1); } }
+@keyframes seal-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+.entry-gate-opening .gate-seal-art { animation: seal-crack .45s ease both; }
+.gate-seal-half { transition: translate .45s ease, rotate .45s ease; }
+.entry-gate-opening .gate-seal-half-left { translate: -6px 0; rotate: -6deg; }
+.entry-gate-opening .gate-seal-half-right { translate: 6px 0; rotate: 6deg; }
+@keyframes seal-crack {
+  0% { transform: scale(1); }
+  30% { transform: scale(.94) rotate(-3deg); }
+  60% { transform: scale(1.06) rotate(3deg); }
+  100% { transform: scale(1); }
+}
+
+/* Invisible tap target over the seal, with a pulsing gold ring. */
+.gate-seal-button {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 124px; height: 124px;
+  margin: -62px 0 0 -62px;
+  z-index: 5;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  padding: 0;
+}
+.gate-seal-button:focus-visible { outline: 2px solid var(--gold-light); outline-offset: 6px; }
+.gate-seal-ring {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 1px solid rgba(243,229,171,.7);
+  animation: seal-ring 2.2s ease-out 2.2s infinite;
+  opacity: 0;
+}
+@keyframes seal-ring { 0% { opacity: .9; transform: scale(.9); } 100% { opacity: 0; transform: scale(1.5); } }
+.entry-gate-opening .gate-seal-ring { display: none; }
+
+.gate-copy {
+  position: absolute;
+  left: 0; right: 0;
+  z-index: 4;
+  padding: 0 16px;
   text-align: center;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: rgba(45,10,15,.6);
-  box-shadow: 0 20px 60px rgba(0,0,0,.45);
-  animation: detail-rise .8s ease both;
+  pointer-events: none;
+  transition: opacity .4s ease, transform .6s ease;
 }
-.entry-gate-card .display { margin: 12px 0 28px; font-size: clamp(32px, 9vw, 52px); }
-.entry-gate .om { margin: 0 auto 18px; }
-.entry-gate .entry-gate-button { display: inline-flex; align-items: center; gap: 10px; font-size: 15px; padding: 14px 28px; }
-.entry-gate .entry-gate-button span { display: inline; }
-.entry-gate-hint { margin: 18px 0 0; color: var(--muted); font-size: 12px; letter-spacing: .08em; }
+.gate-copy-top { bottom: calc(50% + 84px); }
+.gate-copy-bottom { top: calc(50% + 84px); }
+.entry-gate-opening .gate-copy { opacity: 0; }
+.entry-gate-opening .gate-copy-top { transform: translateY(-30px); }
+.entry-gate-opening .gate-copy-bottom { transform: translateY(30px); }
+
+.gate-reveal { animation: gate-reveal .8s ease calc(1.1s + var(--d) * .18s) both; }
+@keyframes gate-reveal { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+.gate-kicker { margin: 0 0 10px; color: var(--gold); font-size: 11px; font-weight: 600; letter-spacing: .3em; text-transform: uppercase; }
+.gate-names { margin: 0; font: 700 clamp(32px, 9vw, 52px)/1.1 "Cinzel Decorative", serif; }
+.gate-names .gate-name, .gate-names .gate-amp {
+  display: block;
+  background: linear-gradient(110deg, var(--gold) 0%, var(--gold) 35%, #FFF6D5 45%, var(--gold-light) 50%, var(--gold) 60%, #C9A03A 100%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.gate-names .gate-name { animation: gate-reveal .8s ease calc(1.1s + var(--d) * .18s) both, gold-shimmer 4s linear 2.8s infinite; }
+.gate-names .gate-amp { font: italic 400 .6em/1.2 "Cormorant Garamond", serif; }
+@keyframes gold-shimmer { from { background-position: 100% 0; } to { background-position: -150% 0; } }
+
+.gate-tap { margin: 0 0 8px; color: var(--gold); font-size: 12px; font-weight: 600; letter-spacing: .22em; text-transform: uppercase; }
+.gate-tap.gate-reveal { animation: gate-reveal .8s ease calc(1.1s + var(--d) * .18s) both, tap-blink 2.2s ease-in-out 3s infinite; }
+@keyframes tap-blink { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+.gate-hint { margin: 0; color: var(--muted); font-size: 12px; letter-spacing: .08em; }
+
+.gate-sparkles { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+.gate-sparkles span {
+  position: absolute;
+  top: -20px;
+  left: calc(var(--i) * 6.2% + 2%);
+  width: 9px; height: 13px;
+  border-radius: 80% 0 80% 0;
+  background: #E89020;
+  opacity: .7;
+  animation: petal-fall calc(8s + var(--i) * .37s) linear calc(var(--i) * -.9s) infinite;
+}
+.gate-sparkles span:nth-child(3n) { background: #C41E3A; }
+.gate-sparkles span:nth-child(4n) { background: var(--gold-light); width: 5px; height: 5px; border-radius: 50%; box-shadow: 0 0 8px var(--gold); }
+.entry-gate-opening .gate-sparkles { opacity: 0; transition: opacity .4s ease; }
+@keyframes petal-fall {
+  from { transform: translate3d(0, 0, 0) rotate(0deg); }
+  50% { transform: translate3d(30px, 55vh, 0) rotate(200deg); }
+  to { transform: translate3d(-20px, 110vh, 0) rotate(420deg); }
+}
+
+@media (max-width: 480px) {
+  .gate-seal-half, .gate-seal-button { width: 104px; height: 104px; margin-top: -52px; }
+  .gate-seal-button { margin-left: -52px; }
+  .gate-seal-half-left { right: -53px; }
+  .gate-seal-half-right { left: -53px; }
+  .gate-copy-top { bottom: calc(50% + 72px); }
+  .gate-copy-bottom { top: calc(50% + 72px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .entry-gate, .entry-gate * { animation-duration: .01s !important; animation-iteration-count: 1 !important; }
+  .gate-sparkles { display: none; }
+}
 
 /* Language picker: English / हिन्दी / বাংলা */
 .lang-select { position: relative; flex-shrink: 0; }

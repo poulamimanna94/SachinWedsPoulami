@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState, useRef } from 'react'
 import confetti from 'canvas-confetti'
+import EntryGate from './EntryGate'
 import { supabase, supabaseConfigured } from './supabase'
 
 type Lang = 'en' | 'hi' | 'bn'
@@ -127,6 +128,8 @@ function App() {
   const langMenuRef = useRef<HTMLDivElement | null>(null)
   const [playing, setPlaying] = useState(true)
   const [showEntryGate, setShowEntryGate] = useState(true)
+  const [gateOpening, setGateOpening] = useState(false)
+  const gateOpeningRef = useRef(false)
   const [youtubeVideoId, setYoutubeVideoId] = useState(defaultYoutubeVideoId)
   const [isDefaultYoutubeSong, setIsDefaultYoutubeSong] = useState(true)
   const [youtubePlayerOpen, setYoutubePlayerOpen] = useState(true)
@@ -187,7 +190,8 @@ function App() {
     if (isDefaultYoutubeSong && playing) {
       audio.volume = 1
       audio.play()
-        .then(() => setShowEntryGate(false))
+        // Once the guest has tapped, the door animation removes the gate instead.
+        .then(() => { if (!gateOpeningRef.current) setShowEntryGate(false) })
         .catch(() => setPlaying(false))
     } else {
       audio.pause()
@@ -226,7 +230,13 @@ function App() {
     audio?.play()
       .then(() => setPlaying(true))
       .catch(() => setPlaying(false))
-    setShowEntryGate(false)
+    // The seal cracks, the doors swing open, then the gate is removed.
+    gateOpeningRef.current = true
+    setGateOpening(true)
+    window.setTimeout(() => {
+      confetti({ particleCount: 90, spread: 100, origin: { y: 0.45 }, zIndex: 1100, colors: ['#D4AF37', '#F3E5AB', '#E89020', '#C41E3A'] })
+    }, 900)
+    window.setTimeout(() => setShowEntryGate(false), 2450)
   }
 
   useEffect(() => {
@@ -824,20 +834,7 @@ function App() {
         </div>
       </header>
 
-      {showEntryGate && (
-        <div className="entry-gate" role="dialog" aria-label="Open wedding invitation">
-          <div className="entry-gate-card">
-            <div className="om">ॐ</div>
-            <p className="gold-kicker">{tr('You are cordially invited', 'आप सादर आमंत्रित हैं', 'আপনাকে সাদর আমন্ত্রণ')}</p>
-            <h1 className="display gold-gradient-text">Poulami & Sachin</h1>
-            <button type="button" className="pill gold-btn entry-gate-button" onClick={openInvitation}>
-              <i className="fas fa-envelope-open-text" />
-              <span>{tr('Open Invitation', 'निमंत्रण खोलें', 'নিমন্ত্রণপত্র খুলুন')}</span>
-            </button>
-            <p className="entry-gate-hint"><i className="fas fa-music" /> {tr('Best with sound on', 'ध्वनि चालू रखें', 'সাউন্ড চালু রাখুন')}</p>
-          </div>
-        </div>
-      )}
+      {showEntryGate && <EntryGate opening={gateOpening} onOpen={openInvitation} tr={tr} />}
 
       {youtubeVideoId && youtubePlayerOpen && !isDefaultYoutubeSong && (
         <div
