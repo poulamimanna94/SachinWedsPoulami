@@ -1201,7 +1201,6 @@ function App() {
                 <label>Guest Affiliation
                   <select name="affiliation" defaultValue="Ladkewale (Groom's Side)">
                     <option>Ladkewale (Groom's Side)</option>
-                    <option>Ladkiwale (Bride's Side)</option>
                     <option>Common Dear Friends</option>
                   </select>
                 </label>
