@@ -135,8 +135,6 @@ function App() {
   const [youtubePlayerOpen, setYoutubePlayerOpen] = useState(true)
   const [youtubePlayerMinimized, setYoutubePlayerMinimized] = useState(false)
   const [youtubeError, setYoutubeError] = useState('')
-  const [youtubeSearch, setYoutubeSearch] = useState('')
-  const [youtubeSearching, setYoutubeSearching] = useState(false)
 
   const [countdown, setCountdown] = useState({ d: 0, h: 0, m: 0, s: 0 })
   const [songs, setSongs] = useState([
@@ -368,59 +366,6 @@ function App() {
       return file
     } finally {
       URL.revokeObjectURL(objectUrl)
-    }
-  }
-
-  const searchYoutube = async (event: FormEvent) => {
-    event.preventDefault()
-    const query = youtubeSearch.trim()
-    if (!query) return
-
-    if (!supabase) {
-      setYoutubeError('Supabase is not configured for song search.')
-      return
-    }
-
-    setYoutubeSearching(true)
-    setYoutubeError('')
-
-    try {
-      const { data, error } = await supabase.functions.invoke('youtube-search', {
-        body: { query },
-      })
-
-      if (error) {
-        let message = error.message
-        const context = 'context' in error ? error.context : undefined
-
-        if (context instanceof Response) {
-          try {
-            const errorBody = await context.clone().json()
-            message = errorBody.error || message
-          } catch {
-            // Keep the SDK error when the response is not JSON.
-          }
-        }
-
-        throw new Error(message)
-      }
-
-      const videoId = data?.videoId
-      if (!videoId) throw new Error(data?.error || 'No playable YouTube song was found for that name.')
-
-      defaultAudioRef.current?.pause()
-      setYoutubeVideoId(videoId)
-      setIsDefaultYoutubeSong(false)
-      setYoutubePlayerOpen(true)
-      setYoutubePlayerMinimized(false)
-      setPlaying(true)
-    } catch (error) {
-      console.error('YouTube search failed:', error)
-      const message = error instanceof Error ? error.message : 'YouTube search failed.'
-      setYoutubeError(message)
-      setPlaying(false)
-    } finally {
-      setYoutubeSearching(false)
     }
   }
 
@@ -769,18 +714,6 @@ function App() {
             <span className="nav-subtitle">{tr('Vivah Nimantran', 'शुभ विवाह निमंत्रण', 'শুভ বিবাহের নিমন্ত্রণ')}</span>
           </div>
           <div className="nav-actions">
-            <form className="youtube-search-form" onSubmit={searchYoutube}>
-              <input
-                value={youtubeSearch}
-                onChange={(e) => setYoutubeSearch(e.target.value)}
-                placeholder="Song name"
-                aria-label="Search YouTube by song name"
-              />
-              <button type="submit" className="pill outline" disabled={youtubeSearching} aria-label="Search and play song">
-                <i className={`fas ${youtubeSearching ? 'fa-spinner fa-spin' : 'fa-magnifying-glass'}`} />
-                <span>{youtubeSearching ? 'Searching...' : 'Click to play Song'}</span>
-              </button>
-            </form>
             <button
               type="button"
               className="pill outline"
