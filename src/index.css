@@ -448,10 +448,23 @@ footer small { color: rgba(247,243,233,.35); font-size: 9px; }
 
 .shared-memory-gallery {
   position: relative;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+  margin: 18px 0;
 }
 
 .shared-photo {
   position: relative;
+}
+/* Square thumbnails; tapping one opens the full photo. */
+.shared-photo img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  border-radius: 8px;
 }
 
 .memory-empty {
@@ -515,8 +528,110 @@ footer small { color: rgba(247,243,233,.35); font-size: 9px; }
   pointer-events: none;
 }
 
+.uploaded-photo-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  color: var(--gold);
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.uploaded-photo-link:hover { color: var(--gold-light); }
+button.uploaded-photo-link { border: 0; background: none; padding: 0; cursor: pointer; font-family: inherit; }
+
+/* "View your photos" pop-up: the guest's uploads as links, 5 per page. */
+.my-photos-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(20,4,7,.72);
+  animation: my-photos-fade .2s ease both;
+}
+.my-photos-dialog {
+  width: min(420px, 100%);
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--deep);
+  box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  text-align: left;
+  animation: my-photos-rise .25s ease both;
+}
+@keyframes my-photos-fade { from { opacity: 0; } }
+@keyframes my-photos-rise { from { opacity: 0; transform: translateY(12px); } }
+.my-photos-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.my-photos-header h3 { margin: 0; color: var(--gold); font: 600 22px "Cormorant Garamond", serif; }
+.my-photos-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.my-photos-list li { display: flex; align-items: center; gap: 8px; }
+.my-photos-list a {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  border: 1px solid rgba(212,175,55,.25);
+  border-radius: 8px;
+  color: var(--gold-light);
+  font-size: 14px;
+}
+.my-photos-list a:hover { border-color: var(--gold); background: rgba(212,175,55,.08); }
+.my-photos-list a span { text-decoration: underline; text-underline-offset: 3px; }
+.my-photos-list small { margin-left: auto; color: var(--muted); font-size: 11px; }
+.my-photos-open { color: var(--gold); font-size: 11px; }
+/* Red cross on the right of each link to delete just that photo. */
+.my-photos-delete {
+  flex-shrink: 0;
+  width: 34px; height: 34px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: #9B1C2E;
+  color: #fff;
+  cursor: pointer;
+}
+.my-photos-delete:hover:not(:disabled) { background: #C0283E; }
+.my-photos-delete:disabled { opacity: .45; cursor: default; }
+.my-photos-close {
+  flex-shrink: 0;
+  width: 34px; height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--gold);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--gold);
+  cursor: pointer;
+}
+.my-photos-close:hover { background: var(--gold); color: var(--deep); }
+.my-photos-empty { margin: 0; color: var(--muted); font-size: 13px; }
+.my-photos-pager { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 16px; color: var(--muted); font-size: 12px; }
+.my-photos-pager button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border: 1px solid rgba(212,175,55,.4);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--gold);
+  font-size: 12px;
+}
+.my-photos-pager button:disabled { opacity: .35; cursor: default; }
+.my-photos-pager button:not(:disabled):hover { background: var(--gold); color: var(--deep); }
+.shared-photo > a { display: block; }
 .photo-message {
+  display: block;
   min-height: 1.2em;
+  color: var(--gold-light);
+  font-size: 13px;
+  font-style: normal;
 }
 
 /* Keep the default Ullam Padum autoplay player hidden.

@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState, useRef } from 'react'
 import confetti from 'canvas-confetti'
 import EntryGate from './EntryGate'
+import MyPhotosDialog from './MyPhotosDialog'
 import { supabase, supabaseConfigured } from './supabase'
 
 type Lang = 'en' | 'hi' | 'bn'
@@ -160,6 +161,7 @@ function App() {
   const [sharedPhotos, setSharedPhotos] = useState<SharedPhoto[]>([])
   const [photoUploading, setPhotoUploading] = useState(false)
   const [photoMessage, setPhotoMessage] = useState('')
+  const [myPhotosOpen, setMyPhotosOpen] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
   const t = translations[lang]
@@ -295,6 +297,9 @@ function App() {
   }, [])
 
   // Pick the text for the current language: English, Hindi or Bengali.
+  // This guest's own uploads, oldest first so "Photo 1" is the first one they shared.
+  const myPhotos = sharedPhotos.filter((photo) => photo.uploaded_by === currentUserId).reverse()
+
   const tr = (en: string, hi: string, bn: string) => (lang === 'hi' ? hi : lang === 'bn' ? bn : en)
 
   useEffect(() => {
@@ -311,8 +316,26 @@ function App() {
     return () => document.removeEventListener('pointerdown', closeOnOutsideTap)
   }, [langMenuOpen])
 
+  // Phone galleries (especially cloud photos on Android) often hand over files
+  // with an empty or generic type, so fall back to the file extension.
+  const isImageFile = (file: File) =>
+    file.type.startsWith('image/') ||
+    /\.(jpe?g|png|gif|webp|heic|heif|avif|bmp)$/i.test(file.name) ||
+    file.type === '' ||
+    file.type === 'application/octet-stream'
+
+  // crypto.randomUUID is missing on older phone browsers.
+  const makePhotoId = () => {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID()
+    const bytes = crypto.getRandomValues(new Uint8Array(16))
+    bytes[6] = (bytes[6] & 0x0f) | 0x40
+    bytes[8] = (bytes[8] & 0x3f) | 0x80
+    const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
+  }
+
   const compressImageForUpload = async (file: File, maxWidth = 1600, targetQuality = 0.75): Promise<File> => {
-    if (!file.type.startsWith('image/')) return file
+    if (!isImageFile(file)) return file
 
     const objectUrl = URL.createObjectURL(file)
 
@@ -338,7 +361,8 @@ function App() {
       context.fillRect(0, 0, width, height)
       context.drawImage(image, 0, 0, width, height)
 
-      const mimeType = file.type === 'image/png' ? 'image/jpeg' : file.type
+      // Always re-encode as JPEG: every browser can write it and every guest can view it.
+      const mimeType = 'image/jpeg'
       const outputName = file.name.replace(/\.[^/.]+$/, '') + '.jpg'
 
       let quality = targetQuality
@@ -520,73 +544,86 @@ function App() {
     }
   }, [])
 
-  const submitPhoto = async (file?: File) => {
-    if (!file) return
+  // Shrinks and uploads one photo; throws with a readable message on failure.
+  const uploadPhoto = async (file: File) => {
+    if (!supabase || !currentUserId) throw new Error('Photo sharing is still connecting. Please try again in a moment.')
+    if (!isImageFile(file)) throw new Error(`"${file.name}" is not an image file.`)
+
+    // Phone photos are often over 10 MB; shrink first, then check the size.
+    const optimizedFile = await compressImageForUpload(file)
+    if (optimizedFile.size > 10 * 1024 * 1024) {
+      throw new Error(`"${file.name}" is too large. Please choose a smaller photo.`)
+    }
+    const extension = optimizedFile.name.split('.').pop()?.toLowerCase() || 'jpg'
+    const photoId = makePhotoId()
+    const storagePath = `${currentUserId}/${photoId}.${extension}`
+
+    const { error: uploadError } = await supabase.storage
+      .from('wedding-photos')
+      .upload(storagePath, optimizedFile, {
+        cacheControl: '3600',
+        contentType: optimizedFile.type || 'image/jpeg',
+        upsert: false,
+      })
+
+    if (uploadError) throw uploadError
+
+    const { data: publicUrlData } = supabase.storage
+      .from('wedding-photos')
+      .getPublicUrl(storagePath)
+
+    const { error: insertError } = await supabase
+      .from('wedding_photos')
+      .insert({
+        id: photoId,
+        storage_path: storagePath,
+        public_url: publicUrlData.publicUrl,
+        uploaded_by: currentUserId,
+      })
+
+    if (insertError) {
+      await supabase.storage.from('wedding-photos').remove([storagePath])
+      throw insertError
+    }
+  }
+
+  // Guests can pick several photos at once; they upload one after another.
+  const submitPhotos = async (fileList: FileList | null) => {
+    const files = Array.from(fileList ?? [])
+    if (!files.length) return
 
     if (!supabase || !currentUserId) {
       setPhotoMessage('Photo sharing is still connecting. Please try again in a moment.')
       return
     }
 
-    if (!file.type.startsWith('image/')) {
-      setPhotoMessage('Please select an image file.')
-      return
-    }
-
-    const maxSize = 10 * 1024 * 1024
-    if (file.size > maxSize) {
-      setPhotoMessage('Please choose an image smaller than 10 MB.')
-      return
-    }
-
     setPhotoUploading(true)
-    setPhotoMessage('Optimizing your photo...')
+    const failures: string[] = []
+    let uploaded = 0
 
-    try {
-      const optimizedFile = await compressImageForUpload(file)
-      const extension = optimizedFile.name.split('.').pop()?.toLowerCase() || 'jpg'
-      const photoId = crypto.randomUUID()
-      const storagePath = `${currentUserId}/${photoId}.${extension}`
-
-      setPhotoMessage('Uploading your memory...')
-
-      const { error: uploadError } = await supabase.storage
-        .from('wedding-photos')
-        .upload(storagePath, optimizedFile, {
-          cacheControl: '3600',
-          contentType: optimizedFile.type,
-          upsert: false,
-        })
-
-      if (uploadError) throw uploadError
-
-      const { data: publicUrlData } = supabase.storage
-        .from('wedding-photos')
-        .getPublicUrl(storagePath)
-
-      const { error: insertError } = await supabase
-        .from('wedding_photos')
-        .insert({
-          id: photoId,
-          storage_path: storagePath,
-          public_url: publicUrlData.publicUrl,
-          uploaded_by: currentUserId,
-        })
-
-      if (insertError) {
-        await supabase.storage.from('wedding-photos').remove([storagePath])
-        throw insertError
+    for (const [index, file] of files.entries()) {
+      setPhotoMessage(files.length > 1 ? `Uploading photo ${index + 1} of ${files.length}...` : 'Uploading your memory...')
+      try {
+        await uploadPhoto(file)
+        uploaded += 1
+      } catch (error) {
+        console.error('Photo upload failed:', error)
+        failures.push(error instanceof Error ? error.message : 'Unknown Supabase error.')
       }
+    }
 
-      await loadSharedPhotos(supabase)
-      setPhotoMessage('Your photo is now shared with the wedding guests.')
-      confetti({ particleCount: 50, spread: 45 })
-    } catch (error) {
-      console.error('Photo upload failed:', error)
-      const message = error instanceof Error ? error.message : 'Unknown Supabase error.'
-      setPhotoMessage(`Photo upload failed: ${message}`)
-    } finally {
-      setPhotoUploading(false)
+    await loadSharedPhotos(supabase)
+    setPhotoUploading(false)
+
+    if (uploaded) confetti({ particleCount: 50, spread: 45 })
+    if (!failures.length) {
+      setPhotoMessage(uploaded > 1
+        ? `Your ${uploaded} photos are now shared with the wedding guests.`
+        : 'Your photo is now shared with the wedding guests.')
+    } else if (uploaded) {
+      setPhotoMessage(`${uploaded} of ${files.length} photos shared. ${failures.length} failed: ${failures[0]}`)
+    } else {
+      setPhotoMessage(`Photo upload failed: ${failures[0]}`)
     }
   }
 
@@ -1039,7 +1076,9 @@ function App() {
 
               {sharedPhotos.map((photo) => (
                 <div className="memory-photo shared-photo" key={photo.id}>
-                  <img src={photo.public_url} alt="Guest wedding memory" loading="lazy" />
+                  <a href={photo.public_url} target="_blank" rel="noreferrer" aria-label="Open photo in full size">
+                    <img src={photo.public_url} alt="Guest wedding memory" loading="lazy" />
+                  </a>
                   <button
                     type="button"
                     className="download-photo-btn"
@@ -1072,9 +1111,10 @@ function App() {
               <input
                 type="file"
                 accept="image/*"
+                multiple
                 disabled={photoUploading}
                 onChange={(e) => {
-                  submitPhoto(e.target.files?.[0])
+                  void submitPhotos(e.target.files)
                   e.currentTarget.value = ''
                 }}
                 hidden
@@ -1086,6 +1126,20 @@ function App() {
             </span>
 
             {photoMessage && <span className="upload-status photo-message">{photoMessage}</span>}
+            {myPhotos.length > 0 && (
+              <button type="button" className="uploaded-photo-link" onClick={() => setMyPhotosOpen(true)}>
+                <i className="fas fa-images" /> {tr('View your photos', 'अपनी फोटो देखें', 'আপনার ছবি দেখুন')} ({myPhotos.length})
+              </button>
+            )}
+            {myPhotosOpen && <MyPhotosDialog
+                photos={myPhotos}
+                onClose={() => setMyPhotosOpen(false)}
+                onDelete={async (photoId) => {
+                  const photo = sharedPhotos.find((item) => item.id === photoId)
+                  if (photo) await deleteSharedPhoto(photo)
+                }}
+                tr={tr}
+              />}
           </div>        </section>
 
         <section className="memory-strip memory-strip-right">
