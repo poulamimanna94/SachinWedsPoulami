@@ -130,7 +130,6 @@ function App() {
   const [playing, setPlaying] = useState(true)
   const [showEntryGate, setShowEntryGate] = useState(true)
   const [gateOpening, setGateOpening] = useState(false)
-  const gateOpeningRef = useRef(false)
   const [youtubeVideoId, setYoutubeVideoId] = useState(defaultYoutubeVideoId)
   const [isDefaultYoutubeSong, setIsDefaultYoutubeSong] = useState(true)
   const [youtubePlayerOpen, setYoutubePlayerOpen] = useState(true)
@@ -188,16 +187,15 @@ function App() {
     return () => window.clearInterval(timer)
   }, [])
 
-  // Browsers block sound until the guest interacts with the page, so this
-  // tries to autoplay first and keeps the "Open Invitation" screen up if blocked.
+  // Try to start the music straight away. Browsers that allow it (often Firefox)
+  // play it behind the splash screen; others wait for the tap on the seal. The
+  // splash screen always stays until the guest opens it.
   useEffect(() => {
     const audio = defaultAudioRef.current
     if (!audio) return
     if (isDefaultYoutubeSong && playing) {
       audio.volume = 1
       audio.play()
-        // Once the guest has tapped, the door animation removes the gate instead.
-        .then(() => { if (!gateOpeningRef.current) setShowEntryGate(false) })
         .catch(() => setPlaying(false))
     } else {
       audio.pause()
@@ -237,7 +235,6 @@ function App() {
       .then(() => setPlaying(true))
       .catch(() => setPlaying(false))
     // The seal cracks, the doors swing open, then the gate is removed.
-    gateOpeningRef.current = true
     setGateOpening(true)
     window.setTimeout(() => {
       confetti({ particleCount: 90, spread: 100, origin: { y: 0.45 }, zIndex: 1100, colors: ['#D4AF37', '#F3E5AB', '#E89020', '#C41E3A'] })
