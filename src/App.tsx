@@ -162,6 +162,8 @@ function App() {
   const [photoUploading, setPhotoUploading] = useState(false)
   const [photoMessage, setPhotoMessage] = useState('')
   const [myPhotosOpen, setMyPhotosOpen] = useState(false)
+  // The gallery shows six thumbnails per page so the card never grows too tall.
+  const [galleryPage, setGalleryPage] = useState(0)
   const photoSetupMissingMessage =
     'Photo sharing is not set up on this site yet: the Supabase URL and key are missing from the site settings.'
   const photoNotReadyMessage = (reason: string) =>
@@ -303,6 +305,14 @@ function App() {
   // Pick the text for the current language: English, Hindi or Bengali.
   // This guest's own uploads, oldest first so "Photo 1" is the first one they shared.
   const myPhotos = sharedPhotos.filter((photo) => photo.uploaded_by === currentUserId).reverse()
+
+  const GALLERY_PAGE_SIZE = 6
+  const galleryPageCount = Math.max(1, Math.ceil(sharedPhotos.length / GALLERY_PAGE_SIZE))
+  const currentGalleryPage = Math.min(galleryPage, galleryPageCount - 1)
+  const galleryPhotos = sharedPhotos.slice(
+    currentGalleryPage * GALLERY_PAGE_SIZE,
+    currentGalleryPage * GALLERY_PAGE_SIZE + GALLERY_PAGE_SIZE,
+  )
 
   const tr = (en: string, hi: string, bn: string) => (lang === 'hi' ? hi : lang === 'bn' ? bn : en)
 
@@ -626,7 +636,12 @@ function App() {
     await loadSharedPhotos(supabase)
     setPhotoUploading(false)
 
-    if (uploaded) confetti({ particleCount: 50, spread: 45 })
+    if (uploaded) {
+      confetti({ particleCount: 50, spread: 45 })
+      // Newest photos come first, so jump back to page 1 and list the guest's photos.
+      setGalleryPage(0)
+      setMyPhotosOpen(true)
+    }
     if (!failures.length) {
       setPhotoMessage(uploaded > 1
         ? `Your ${uploaded} photos are now shared with the wedding guests.`
@@ -1085,7 +1100,7 @@ function App() {
                 <div className="memory-empty">No guest photos yet — be the first to add one.</div>
               )}
 
-              {sharedPhotos.map((photo) => (
+              {galleryPhotos.map((photo) => (
                 <div className="memory-photo shared-photo" key={photo.id}>
                   <a href={photo.public_url} target="_blank" rel="noreferrer" aria-label="Open photo in full size">
                     <img src={photo.public_url} alt="Guest wedding memory" loading="lazy" />
@@ -1112,7 +1127,24 @@ function App() {
                   )}
                 </div>
               ))}
+              {/* Keep every page the same height so the card size stays fixed. */}
+              {galleryPageCount > 1 &&
+                Array.from({ length: GALLERY_PAGE_SIZE - galleryPhotos.length }, (_, i) => (
+                  <div className="shared-photo shared-photo-placeholder" key={`placeholder-${i}`} aria-hidden="true" />
+                ))}
             </div>
+
+            {galleryPageCount > 1 && (
+              <div className="my-photos-pager gallery-pager">
+                <button type="button" onClick={() => setGalleryPage(currentGalleryPage - 1)} disabled={currentGalleryPage === 0}>
+                  <i className="fas fa-chevron-left" /> {tr('Previous', 'पिछला', 'আগের')}
+                </button>
+                <span>{tr('Page', 'पेज', 'পৃষ্ঠা')} {currentGalleryPage + 1} / {galleryPageCount}</span>
+                <button type="button" onClick={() => setGalleryPage(currentGalleryPage + 1)} disabled={currentGalleryPage === galleryPageCount - 1}>
+                  {tr('Next', 'अगला', 'পরের')} <i className="fas fa-chevron-right" />
+                </button>
+              </div>
+            )}
 
             <label className={`upload-btn ${photoUploading ? 'disabled' : ''}`}>
               <i className={`fas ${photoUploading ? 'fa-spinner fa-spin' : 'fa-upload'}`} />

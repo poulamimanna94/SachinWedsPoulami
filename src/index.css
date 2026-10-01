@@ -449,10 +449,15 @@ footer small { color: rgba(247,243,233,.35); font-size: 9px; }
 .shared-memory-gallery {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 10px;
   margin: 18px 0;
 }
+@media (max-width: 420px) {
+  .shared-memory-gallery { grid-template-columns: repeat(2, 1fr); }
+}
+.gallery-pager { margin: 0 0 16px; }
+.shared-photo-placeholder { aspect-ratio: 1; }
 
 .shared-photo {
   position: relative;
