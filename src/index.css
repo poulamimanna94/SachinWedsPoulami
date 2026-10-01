@@ -696,10 +696,11 @@ button.uploaded-photo-link { border: 0; background: none; padding: 0; cursor: po
 /* Entry gate: the wedding painting split into two doors, with the names and
    a P&S wax seal in its empty centre. Tapping the seal (or anywhere) cracks
    it, the doors swing open and the invitation is revealed. The same tap also
-   unlocks the music. The painting (2:3) is always shown whole, as large as
-   the screen allows, on a maroon background that matches it. */
+   unlocks the music. The painting is 2:3; on phones it fills the screen
+   (cropping at most a little of the sides) over a blurred copy of itself; on
+   wide screens it is shown whole on a matching maroon background. */
 .entry-gate {
-  --art-w: min(100vw, 66.667vh);
+  --art-w: min(max(100vw, 66.667vh), 116vw);
   position: fixed;
   inset: 0;
   z-index: 1000;
@@ -739,12 +740,16 @@ button.uploaded-photo-link { border: 0; background: none; padding: 0; cursor: po
 .gate-art-inner { position: absolute; top: 0; bottom: 0; width: 100vw; }
 .gate-door-left .gate-art-inner { left: 0; }
 .gate-door-right .gate-art-inner { right: 0; }
-.gate-art-backdrop {
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(ellipse at 50% 55%, rgba(242,182,50,.10), transparent 60%),
-    radial-gradient(ellipse at center, #6E0309 0%, #4A0207 55%, #2A0104 100%);
+.gate-art-backdrop { position: absolute; inset: -40px; background: url(/images/splash-art.webp) center/cover; filter: blur(22px) brightness(.55); }
+@media (min-aspect-ratio: 1/1) {
+  .entry-gate { --art-w: 66.667vh; }
+  .gate-art-backdrop {
+    inset: 0;
+    filter: none;
+    background:
+      radial-gradient(ellipse at 50% 55%, rgba(242,182,50,.10), transparent 60%),
+      radial-gradient(ellipse at center, #6E0309 0%, #4A0207 55%, #2A0104 100%);
+  }
 }
 .gate-art {
   position: absolute;
