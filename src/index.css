@@ -873,11 +873,21 @@ button.uploaded-photo-link { border: 0; background: none; padding: 0; cursor: po
   to { transform: translate3d(-20px, 110vh, 0) rotate(420deg); }
 }
 
-/* Tall phones: instead of one painting with gaps above and below, show the
-   painting's top scene (arch, Radha-Krishna, Durga Maa, Howrah Bridge) full
+/* Phones (portrait): instead of one painting with gaps above and below, show
+   the painting's top scene (arch, Radha-Krishna, Durga Maa, Howrah Bridge) full
    width at the top and its foreground (topor, kulo, alta hands) full width at
-   the bottom, on the painting's own maroon, with the text in between. */
-@media (max-aspect-ratio: 1/2) {
+   the bottom, on the painting's own maroon, with the text in between. The
+   scenes are 85.5vw and 60vw tall at full size; on shorter screens (browser
+   bars showing) they shrink, trimming only the outer arch and bottom border,
+   so the text always keeps about 250px. */
+@media (max-width: 600px) and (orientation: portrait) {
+  .entry-gate {
+    --gate-h: 100vh;
+    --band-room: calc(var(--gate-h) - 250px);
+    --band-top: min(85.5vw, calc(var(--band-room) * .588));
+    --band-bottom: min(60vw, calc(var(--band-room) * .412));
+  }
+  @supports (height: 100dvh) { .entry-gate { --gate-h: 100dvh; } }
   .gate-art, .gate-art-backdrop { display: none; }
   .gate-art-inner { background: radial-gradient(ellipse at 50% 50%, #7A0A12 0%, #66040A 55%, #4E0207 100%); }
   .gate-band {
@@ -890,15 +900,20 @@ button.uploaded-photo-link { border: 0; background: none; padding: 0; cursor: po
   }
   .gate-band-top {
     top: 0;
-    aspect-ratio: 1 / .855;
-    background-position: top center;
+    height: var(--band-top);
+    /* Ends at the river edge (85.5vw down the painting) at full size; when the
+       band is shorter, a quarter of the trim comes off the river, the rest off
+       the outer arch, so Durga Maa's trishul stays in view. */
+    background-position: center calc(var(--band-top) - 85.5vw + (85.5vw - var(--band-top)) * .25);
     -webkit-mask-image: linear-gradient(to bottom, #000 82%, transparent 100%);
     mask-image: linear-gradient(to bottom, #000 82%, transparent 100%);
   }
   .gate-band-bottom {
     bottom: 0;
-    aspect-ratio: 1 / .6;
-    background-position: bottom center;
+    height: var(--band-bottom);
+    /* Starts at the topor and kulo (90vw down the painting) at full size; when
+       shorter, the bottom border is trimmed first so the bangles stay in view. */
+    background-position: center min(-90vw, calc(var(--band-bottom) - 144vw));
     -webkit-mask-image: linear-gradient(to top, #000 80%, transparent 100%);
     mask-image: linear-gradient(to top, #000 80%, transparent 100%);
   }
@@ -906,7 +921,7 @@ button.uploaded-photo-link { border: 0; background: none; padding: 0; cursor: po
   /* Text column fills the maroon space between the two scenes. */
   .gate-frame {
     left: 0; right: 0;
-    top: 78.66vw; bottom: 54vw;
+    top: calc(var(--band-top) * .92); bottom: calc(var(--band-bottom) * .9);
     width: auto;
     aspect-ratio: auto;
     display: flex;
