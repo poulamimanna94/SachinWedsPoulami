@@ -43,6 +43,9 @@ const Artwork = () => (
   <div className="gate-art-inner">
     <div className="gate-art-backdrop" />
     <div className="gate-art" />
+    {/* Tall phones: the painting's top scene and foreground, each full width. */}
+    <div className="gate-band gate-band-top" />
+    <div className="gate-band gate-band-bottom" />
   </div>
 )
 
@@ -74,16 +77,18 @@ export default function EntryGate({ opening, onOpen, tr }: EntryGateProps) {
           <span className="gate-name gate-reveal" style={{ '--d': 3 } as CSSProperties}>Sachin</span>
         </h1>
 
-        <div className="gate-seal"><WaxSeal /></div>
-        <button
-          type="button"
-          className="gate-seal-button"
-          onClick={(e) => { e.stopPropagation(); if (!opening) onOpen() }}
-          disabled={opening}
-          aria-label={tr('Open Invitation', 'निमंत्रण खोलें', 'নিমন্ত্রণপত্র খুলুন')}
-        >
-          <span className="gate-seal-ring" aria-hidden="true" />
-        </button>
+        <div className="gate-seal-wrap">
+          <div className="gate-seal"><WaxSeal /></div>
+          <button
+            type="button"
+            className="gate-seal-button"
+            onClick={(e) => { e.stopPropagation(); if (!opening) onOpen() }}
+            disabled={opening}
+            aria-label={tr('Open Invitation', 'निमंत्रण खोलें', 'নিমন্ত্রণপত্র খুলুন')}
+          >
+            <span className="gate-seal-ring" aria-hidden="true" />
+          </button>
+        </div>
 
         <div className="gate-tapband" aria-hidden="true" />
         <p className="gate-tap gate-reveal" style={{ '--d': 4 } as CSSProperties}>{tr('Tap the seal to open', 'खोलने के लिए मुहर पर टैप करें', 'খুলতে সিলমোহরে ট্যাপ করুন')}</p>

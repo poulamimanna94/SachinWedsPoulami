@@ -751,6 +751,7 @@ button.uploaded-photo-link { border: 0; background: none; padding: 0; cursor: po
       radial-gradient(ellipse at center, #6E0309 0%, #4A0207 55%, #2A0104 100%);
   }
 }
+.gate-band { display: none; }
 .gate-art {
   position: absolute;
   left: 50%; top: 50%;
@@ -796,10 +797,11 @@ button.uploaded-photo-link { border: 0; background: none; padding: 0; cursor: po
 }
 .gate-names .gate-amp { font-weight: 400; font-size: .62em; line-height: 1.15; color: #F2C14E; }
 
-.gate-seal, .gate-seal-button {
+.gate-seal-wrap {
   left: calc(50% - 5.5cqw); right: auto; top: calc(68.6% - 5.5cqw);
   width: 11cqw; height: 11cqw;
 }
+.gate-seal, .gate-seal-button { position: absolute; inset: 0; }
 
 .gate-seal-art { width: 100%; height: 100%; display: block; overflow: visible; animation: seal-breathe 3s ease-in-out 2s infinite; }
 .gate-seal-monogram { font: 700 19px "Cinzel Decorative", serif; fill: #4A0E17; letter-spacing: -.5px; }
@@ -869,6 +871,57 @@ button.uploaded-photo-link { border: 0; background: none; padding: 0; cursor: po
   from { transform: translate3d(0, 0, 0) rotate(0deg); }
   50% { transform: translate3d(30px, 55vh, 0) rotate(200deg); }
   to { transform: translate3d(-20px, 110vh, 0) rotate(420deg); }
+}
+
+/* Tall phones: instead of one painting with gaps above and below, show the
+   painting's top scene (arch, Radha-Krishna, Durga Maa, Howrah Bridge) full
+   width at the top and its foreground (topor, kulo, alta hands) full width at
+   the bottom, on the painting's own maroon, with the text in between. */
+@media (max-aspect-ratio: 1/2) {
+  .gate-art, .gate-art-backdrop { display: none; }
+  .gate-art-inner { background: radial-gradient(ellipse at 50% 50%, #7A0A12 0%, #66040A 55%, #4E0207 100%); }
+  .gate-band {
+    display: block;
+    position: absolute;
+    left: 0;
+    width: 100vw;
+    background: url(/images/splash-art.webp) no-repeat;
+    background-size: 100% auto;
+  }
+  .gate-band-top {
+    top: 0;
+    aspect-ratio: 1 / .855;
+    background-position: top center;
+    -webkit-mask-image: linear-gradient(to bottom, #000 82%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 82%, transparent 100%);
+  }
+  .gate-band-bottom {
+    bottom: 0;
+    aspect-ratio: 1 / .6;
+    background-position: bottom center;
+    -webkit-mask-image: linear-gradient(to top, #000 80%, transparent 100%);
+    mask-image: linear-gradient(to top, #000 80%, transparent 100%);
+  }
+
+  /* Text column fills the maroon space between the two scenes. */
+  .gate-frame {
+    left: 0; right: 0;
+    top: 78.66vw; bottom: 54vw;
+    width: auto;
+    aspect-ratio: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .gate-frame > * { position: relative; left: auto; right: auto; top: auto; }
+  .gate-halo, .gate-tapband { display: none; }
+  .gate-kicker { margin-bottom: 1.2vh; font-size: clamp(9px, 2.6vw, 13px); }
+  .gate-names { font-size: clamp(30px, 9.4vw, 58px); filter: drop-shadow(0 2px 4px rgba(0,0,0,.55)); }
+  .gate-seal-wrap { width: clamp(64px, 17vw, 96px); height: clamp(64px, 17vw, 96px); margin: 1.6vh auto 1.4vh; }
+  .gate-seal-ring { inset: -10%; border-width: 1px; }
+  .gate-tap { margin-bottom: 1vh; font-size: clamp(10px, 2.7vw, 13px); letter-spacing: .26em; }
+  .gate-hint { font-size: clamp(10px, 2.8vw, 13px); }
 }
 
 @media (prefers-reduced-motion: reduce) {
