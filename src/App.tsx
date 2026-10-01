@@ -306,7 +306,7 @@ function App() {
   // This guest's own uploads, oldest first so "Photo 1" is the first one they shared.
   const myPhotos = sharedPhotos.filter((photo) => photo.uploaded_by === currentUserId).reverse()
 
-  const GALLERY_PAGE_SIZE = 6
+  const GALLERY_PAGE_SIZE = 4
   const galleryPageCount = Math.max(1, Math.ceil(sharedPhotos.length / GALLERY_PAGE_SIZE))
   const currentGalleryPage = Math.min(galleryPage, galleryPageCount - 1)
   const galleryPhotos = sharedPhotos.slice(
@@ -643,9 +643,8 @@ function App() {
       setMyPhotosOpen(true)
     }
     if (!failures.length) {
-      setPhotoMessage(uploaded > 1
-        ? `Your ${uploaded} photos are now shared with the wedding guests.`
-        : 'Your photo is now shared with the wedding guests.')
+      // Kept short so it fits on one line and the card height doesn't change.
+      setPhotoMessage(uploaded > 1 ? `${uploaded} photos shared with the guests.` : 'Photo shared with the guests.')
     } else if (uploaded) {
       setPhotoMessage(`${uploaded} of ${files.length} photos shared. ${failures.length} failed: ${failures[0]}`)
     } else {
@@ -683,26 +682,6 @@ function App() {
       console.error('Photo deletion failed:', error)
       const message = error instanceof Error ? error.message : 'Unknown Supabase error.'
       setPhotoMessage(`Could not delete this photo: ${message}`)
-    }
-  }
-
-  const downloadSharedPhoto = async (photo: SharedPhoto) => {
-    try {
-      const response = await fetch(photo.public_url)
-      if (!response.ok) throw new Error('Image download failed.')
-
-      const blob = await response.blob()
-      const downloadUrl = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = downloadUrl
-      link.download = `wedding-memory-${photo.id}.jpg`
-      document.body.appendChild(link)
-      link.click()
-      link.remove()
-      URL.revokeObjectURL(downloadUrl)
-    } catch (error) {
-      console.error('Photo download failed:', error)
-      setPhotoMessage('Could not download this photo. Please try again.')
     }
   }
 
@@ -1095,57 +1074,47 @@ function App() {
               {tr('See memories shared by everyone attending the wedding.', 'शादी में शामिल सभी मेहमानों द्वारा साझा की गई यादें देखें।', 'বিয়েতে আসা সকল অতিথির ভাগ করে নেওয়া স্মৃতিগুলি দেখুন।')}
             </p>
 
-            <div className="memory-gallery shared-memory-gallery">
-              {sharedPhotos.length === 0 && (
+            {/* One fixed-height row of cropped thumbnails, the same height as the
+                empty message, so the card keeps its size however many photos exist. */}
+            <div className="gallery-strip">
+              {sharedPhotos.length === 0 ? (
                 <div className="memory-empty">No guest photos yet — be the first to add one.</div>
-              )}
-
-              {galleryPhotos.map((photo) => (
-                <div className="memory-photo shared-photo" key={photo.id}>
-                  <a href={photo.public_url} target="_blank" rel="noreferrer" aria-label="Open photo in full size">
-                    <img src={photo.public_url} alt="Guest wedding memory" loading="lazy" />
-                  </a>
-                  <button
-                    type="button"
-                    className="download-photo-btn"
-                    onClick={() => void downloadSharedPhoto(photo)}
-                    aria-label="Download shared photo"
-                    title="Download photo"
-                  >
-                    <i className="fas fa-download" />
-                  </button>
-                  {photo.uploaded_by === currentUserId && (
+              ) : (
+                <>
+                  {galleryPageCount > 1 && (
                     <button
                       type="button"
-                      className="delete-photo-btn"
-                      onClick={() => deleteSharedPhoto(photo)}
-                      aria-label="Delete your shared photo"
-                      title="Delete your photo"
+                      className="gallery-arrow"
+                      onClick={() => setGalleryPage(currentGalleryPage - 1)}
+                      disabled={currentGalleryPage === 0}
+                      aria-label={`Previous photos (page ${currentGalleryPage + 1} of ${galleryPageCount})`}
                     >
-                      <i className="fas fa-trash" />
+                      <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M8 2 L4 6 L8 10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
                     </button>
                   )}
-                </div>
-              ))}
-              {/* Keep every page the same height so the card size stays fixed. */}
-              {galleryPageCount > 1 &&
-                Array.from({ length: GALLERY_PAGE_SIZE - galleryPhotos.length }, (_, i) => (
-                  <div className="shared-photo shared-photo-placeholder" key={`placeholder-${i}`} aria-hidden="true" />
-                ))}
+                  <div className="gallery-track">
+                    {galleryPhotos.map((photo) => (
+                      <a key={photo.id} className="gallery-thumb" href={photo.public_url} target="_blank" rel="noreferrer" aria-label="Open photo in full size">
+                        <img src={photo.public_url} alt="Guest wedding memory" loading="lazy" />
+                      </a>
+                    ))}
+                  </div>
+                  {galleryPageCount > 1 && (
+                    <button
+                      type="button"
+                      className="gallery-arrow"
+                      onClick={() => setGalleryPage(currentGalleryPage + 1)}
+                      disabled={currentGalleryPage === galleryPageCount - 1}
+                      aria-label={`Next photos (page ${currentGalleryPage + 1} of ${galleryPageCount})`}
+                    >
+                      <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M4 2 L8 6 L4 10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                    </button>
+                  )}
+                </>
+              )}
             </div>
 
-            {galleryPageCount > 1 && (
-              <div className="my-photos-pager gallery-pager">
-                <button type="button" onClick={() => setGalleryPage(currentGalleryPage - 1)} disabled={currentGalleryPage === 0}>
-                  <i className="fas fa-chevron-left" /> {tr('Previous', 'पिछला', 'আগের')}
-                </button>
-                <span>{tr('Page', 'पेज', 'পৃষ্ঠা')} {currentGalleryPage + 1} / {galleryPageCount}</span>
-                <button type="button" onClick={() => setGalleryPage(currentGalleryPage + 1)} disabled={currentGalleryPage === galleryPageCount - 1}>
-                  {tr('Next', 'अगला', 'পরের')} <i className="fas fa-chevron-right" />
-                </button>
-              </div>
-            )}
-
+            <div className="photo-actions">
             <label className={`upload-btn ${photoUploading ? 'disabled' : ''}`}>
               <i className={`fas ${photoUploading ? 'fa-spinner fa-spin' : 'fa-upload'}`} />
               {photoUploading
@@ -1163,17 +1132,18 @@ function App() {
                 hidden
               />
             </label>
+            {myPhotos.length > 0 && (
+              <button type="button" className="uploaded-photo-link" onClick={() => setMyPhotosOpen(true)}>
+                <i className="fas fa-images" /> {tr('Your photos', 'आपकी फोटो', 'আপনার ছবি')} ({myPhotos.length})
+              </button>
+            )}
+            </div>
 
             <span className="upload-status">
               <i className="fas fa-users" /> {tr('Shared with wedding guests. You can delete your own photo anytime.', 'सभी मेहमानों के साथ साझा। अपनी फोटो कभी भी हटा सकते हैं।', 'বিয়ের সকল অতিথির সঙ্গে শেয়ার করা হয়। নিজের ছবি যেকোনো সময় মুছে ফেলতে পারেন।')}
             </span>
 
             {photoMessage && <span className="upload-status photo-message">{photoMessage}</span>}
-            {myPhotos.length > 0 && (
-              <button type="button" className="uploaded-photo-link" onClick={() => setMyPhotosOpen(true)}>
-                <i className="fas fa-images" /> {tr('View your photos', 'अपनी फोटो देखें', 'আপনার ছবি দেখুন')} ({myPhotos.length})
-              </button>
-            )}
             {myPhotosOpen && <MyPhotosDialog
                 photos={myPhotos}
                 onClose={() => setMyPhotosOpen(false)}

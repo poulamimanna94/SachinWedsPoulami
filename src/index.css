@@ -446,31 +446,49 @@ footer small { color: rgba(247,243,233,.35); font-size: 9px; }
   line-height: 1.4;
 }
 
-.shared-memory-gallery {
-  position: relative;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+.gallery-strip {
+  align-self: stretch;
+  height: 57px;
   margin: 18px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
-@media (max-width: 420px) {
-  .shared-memory-gallery { grid-template-columns: repeat(2, 1fr); }
+.gallery-track {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
 }
-.gallery-pager { margin: 0 0 16px; }
-.shared-photo-placeholder { aspect-ratio: 1; }
-
-.shared-photo {
-  position: relative;
-}
-/* Square thumbnails; tapping one opens the full photo. */
-.shared-photo img {
+/* Cropped tiles: always 57px tall, narrowing a little on small phones. */
+.gallery-thumb { flex: 0 1 57px; min-width: 0; height: 100%; }
+.gallery-thumb img {
   display: block;
   width: 100%;
-  aspect-ratio: 1;
+  height: 100%;
   object-fit: cover;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 6px;
 }
+.gallery-thumb:hover img { border-color: var(--gold); }
+.gallery-arrow {
+  flex-shrink: 0;
+  width: 26px; height: 26px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(212,175,55,.45);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--gold);
+  cursor: pointer;
+}
+.gallery-arrow:hover:not(:disabled) { background: var(--gold); color: var(--deep); }
+.gallery-arrow:disabled { opacity: .3; cursor: default; }
+.photo-actions { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px 14px; }
+.photo-actions .uploaded-photo-link { margin-top: 0; }
 
 .memory-empty {
   grid-column: 1 / -1;
@@ -630,7 +648,6 @@ button.uploaded-photo-link { border: 0; background: none; padding: 0; cursor: po
 }
 .my-photos-pager button:disabled { opacity: .35; cursor: default; }
 .my-photos-pager button:not(:disabled):hover { background: var(--gold); color: var(--deep); }
-.shared-photo > a { display: block; }
 .photo-message {
   display: block;
   min-height: 1.2em;
