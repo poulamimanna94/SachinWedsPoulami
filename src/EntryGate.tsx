@@ -24,8 +24,12 @@ const WaxSeal = () => (
         <stop offset=".5" stopColor="#D4AF37" />
         <stop offset="1" stopColor="#8A6A12" />
       </radialGradient>
+      {/* Shadow drawn inside the SVG (not a CSS filter) so the seal stays sharp. */}
+      <filter id="gate-seal-shadow" x="-30%" y="-30%" width="160%" height="170%">
+        <feDropShadow dx="0" dy="6" stdDeviation="5" floodColor="#000" floodOpacity=".5" />
+      </filter>
     </defs>
-    <path d={sealPath} fill="url(#gate-wax)" />
+    <path d={sealPath} fill="url(#gate-wax)" filter="url(#gate-seal-shadow)" />
     <circle cx="50" cy="50" r="34" fill="none" stroke="rgba(0,0,0,.35)" strokeWidth="2.4" />
     <circle cx="50" cy="50" r="34" fill="none" stroke="rgba(255,250,230,.6)" strokeWidth=".8" transform="translate(-.6 -.6)" />
     <circle cx="50" cy="50" r="29" fill="none" stroke="#4A0E17" strokeWidth=".6" strokeDasharray="1.5 2" />
