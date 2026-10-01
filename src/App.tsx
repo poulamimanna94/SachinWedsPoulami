@@ -638,9 +638,8 @@ function App() {
 
     if (uploaded) {
       confetti({ particleCount: 50, spread: 45 })
-      // Newest photos come first, so jump back to page 1 and list the guest's photos.
+      // Newest photos come first, so jump back to page 1 to show the new ones.
       setGalleryPage(0)
-      setMyPhotosOpen(true)
     }
     if (!failures.length) {
       // Kept short so it fits on one line and the card height doesn't change.
@@ -1094,9 +1093,25 @@ function App() {
                   )}
                   <div className="gallery-track">
                     {galleryPhotos.map((photo) => (
-                      <a key={photo.id} className="gallery-thumb" href={photo.public_url} target="_blank" rel="noreferrer" aria-label="Open photo in full size">
-                        <img src={photo.public_url} alt="Guest wedding memory" loading="lazy" />
-                      </a>
+                      <div key={photo.id} className="gallery-thumb">
+                        <a href={photo.public_url} target="_blank" rel="noreferrer" aria-label="Open photo in full size">
+                          <img src={photo.public_url} alt="Guest wedding memory" loading="lazy" />
+                        </a>
+                        {/* Guests can only delete the photos they uploaded themselves. */}
+                        {photo.uploaded_by === currentUserId && (
+                          <button
+                            type="button"
+                            className="gallery-thumb-delete"
+                            onClick={() => void deleteSharedPhoto(photo)}
+                            aria-label="Delete your photo"
+                            title={tr('Delete photo', 'फोटो हटाएं', 'ছবি মুছুন')}
+                          >
+                            <svg viewBox="0 0 12 12" width="8" height="8" aria-hidden="true">
+                              <path d="M2 2 L10 10 M10 2 L2 10" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
                     ))}
                   </div>
                   {galleryPageCount > 1 && (
